@@ -78,7 +78,7 @@ Config.Brokers = {
         mission_types        = { 'vehicle_theft', 'delivery', 'sabotage', 'retrieval' },
         can_betray           = true,
         betrayal_base_chance = 15,
-        ped_model            = 's_m_m_movalarm_01',
+        ped_model            = 's_m_m_fibsec_01',
         -- Pillbox Hill, near the financial tower
         location             = { x = 207.8, y = -929.4, z = 30.7, heading = 270.0 },
     },
