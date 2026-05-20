@@ -299,6 +299,26 @@ RegisterCommand('broker_setrep', function(source, args)
     end)
 end, true)
 
+-- broker_reset <playerid>  — clear cooldown, blacklist, and active contract
+RegisterCommand('broker_reset', function(source, args)
+    if source ~= 0 and not IsPlayerAceAllowed(source, 'command.broker_setrep') then return end
+
+    local targetSrc  = tonumber(args[1]) or source
+    local identifier = AT_Broker.GetPlayerIdentifier(targetSrc)
+    if not identifier then print('[at-broker] Player not found.') return end
+
+    MySQL.update(
+        'UPDATE broker_players SET last_contract = NULL, blacklisted_until = NULL WHERE identifier = ?',
+        { identifier }
+    )
+    MySQL.update(
+        "UPDATE broker_contracts SET status = 'cancelled' WHERE player_identifier = ? AND status = 'active'",
+        { identifier }
+    )
+    print(('[at-broker] Reset cooldown + blacklist for %s'):format(identifier))
+    TriggerClientEvent('at-broker:notify', targetSrc, 'success', 'Broker cooldown reset.')
+end, true)
+
 -- broker_profile <playerid>  — print current stats to console
 RegisterCommand('broker_profile', function(source, args)
     if source ~= 0 and not IsPlayerAceAllowed(source, 'command.broker_setrep') then return end
