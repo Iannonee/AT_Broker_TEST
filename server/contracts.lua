@@ -64,6 +64,7 @@ function AT_Broker.Contracts.Generate(identifier, broker_id, profile, cb)
                         label       = typeCfg.label,
                         payload     = payload,
                         expires_at  = expiresAt,
+                        duration    = typeCfg.duration,
                         reward      = reward,
                     }
 

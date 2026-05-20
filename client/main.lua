@@ -422,7 +422,7 @@ RegisterNetEvent('at-broker:contractAssigned', function(contract)
     maxWantedDuringMission = 0
 
     Notify('info', ('Contract: %s  |  $%d  |  %d min'):format(
-        contract.label, contract.reward, math.ceil((contract.expires_at - os.time()) / 60)))
+        contract.label, contract.reward, math.ceil((contract.duration or 600) / 60)))
 
     StartWantedTracking()
 
