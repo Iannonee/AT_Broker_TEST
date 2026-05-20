@@ -20,6 +20,7 @@ server_scripts {
 }
 
 client_scripts {
+    'client/blips.lua',
     'client/main.lua',
 }
 
