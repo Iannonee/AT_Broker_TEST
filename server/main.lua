@@ -254,6 +254,73 @@ exports('getBrokerLevel', function(identifier)
     return Citizen.Await(p)
 end)
 
+-- ──────────────────────────────────────────────────────────────────────────────
+-- Admin commands (server console or in-game with ace permission)
+-- ──────────────────────────────────────────────────────────────────────────────
+
+-- broker_setrep <playerid> <0-100>
+-- Example (server console): broker_setrep 1 100
+RegisterCommand('broker_setrep', function(source, args)
+    -- source == 0 means server console; otherwise check ace permission
+    if source ~= 0 then
+        if not IsPlayerAceAllowed(source, 'command.broker_setrep') then
+            TriggerClientEvent('at-broker:notify', source, 'error', 'No permission.')
+            return
+        end
+    end
+
+    local targetSrc = tonumber(args[1])
+    local rep       = tonumber(args[2])
+
+    if not targetSrc or not rep then
+        print('[at-broker] Usage: broker_setrep <playerid> <0-100>')
+        return
+    end
+
+    rep = AT_Broker.Utils.Clamp(math.floor(rep), 0, 100)
+    local identifier = AT_Broker.GetPlayerIdentifier(targetSrc)
+    if not identifier then
+        print('[at-broker] Player ' .. targetSrc .. ' not found or not connected.')
+        return
+    end
+
+    local level = AT_Broker.Reputation.CalcBrokerLevel(rep)
+
+    AT_Broker.Reputation.GetOrCreateProfile(identifier, function()
+        MySQL.update(
+            'UPDATE broker_players SET reputation = ?, broker_level = ?, blacklisted_until = NULL WHERE identifier = ?',
+            { rep, level, identifier },
+            function()
+                print(('[at-broker] Set %s → reputation %d, level %d'):format(identifier, rep, level))
+                TriggerClientEvent('at-broker:notify', targetSrc, 'success',
+                    ('Admin set your broker reputation to %d (level %d)'):format(rep, level))
+            end
+        )
+    end)
+end, true)
+
+-- broker_profile <playerid>  — print current stats to console
+RegisterCommand('broker_profile', function(source, args)
+    if source ~= 0 and not IsPlayerAceAllowed(source, 'command.broker_setrep') then return end
+
+    local targetSrc  = tonumber(args[1]) or source
+    local identifier = AT_Broker.GetPlayerIdentifier(targetSrc)
+    if not identifier then print('[at-broker] Player not found.') return end
+
+    AT_Broker.Reputation.GetOrCreateProfile(identifier, function(profile)
+        if not profile then print('[at-broker] No profile found.') return end
+        print(('[at-broker] Profile %s → rep:%d lvl:%d rel:%d dis:%d danger:%d blacklisted:%s'):format(
+            identifier,
+            profile.reputation,
+            profile.broker_level,
+            profile.reliability,
+            profile.discretion,
+            profile.danger_level,
+            tostring(profile.blacklisted_until)
+        ))
+    end)
+end, true)
+
 -- Returns the active contract for an identifier, or nil (awaitable)
 exports('getActiveContract', function(identifier)
     if type(identifier) ~= 'string' or #identifier == 0 then return nil end
