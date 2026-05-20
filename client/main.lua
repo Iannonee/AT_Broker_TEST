@@ -91,6 +91,23 @@ CreateThread(function()
 end)
 
 -- ──────────────────────────────────────────────────────────────────────────────
+-- Broker map blips — always visible so players can navigate to contacts
+-- ──────────────────────────────────────────────────────────────────────────────
+CreateThread(function()
+    for _, broker in ipairs(Config.Brokers) do
+        local loc  = broker.location
+        local blip = AddBlipForCoord(loc.x, loc.y, loc.z)
+        SetBlipSprite(blip, 280)   -- person icon
+        SetBlipColour(blip, 44)    -- dark purple
+        SetBlipScale(blip, 0.7)
+        SetBlipAsShortRange(blip, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentString(broker.name)
+        EndTextCommandSetBlipName(blip)
+    end
+end)
+
+-- ──────────────────────────────────────────────────────────────────────────────
 -- Ped spawning
 -- ──────────────────────────────────────────────────────────────────────────────
 CreateThread(function()
@@ -99,14 +116,19 @@ CreateThread(function()
         RequestModel(modelHash)
 
         local waited = 0
-        while not HasModelLoaded(modelHash) and waited < 5000 do
+        while not HasModelLoaded(modelHash) and waited < 10000 do
             Wait(100)
             waited = waited + 100
         end
 
         if HasModelLoaded(modelHash) then
             local loc = broker.location
-            local ped = CreatePed(4, modelHash, loc.x, loc.y, loc.z - 1.0, loc.heading, false, true)
+
+            -- Find the actual ground Z so the ped never spawns underground
+            local foundGround, groundZ = GetGroundZFor_3dCoord(loc.x, loc.y, loc.z + 2.0, false)
+            local spawnZ = foundGround and groundZ or loc.z
+
+            local ped = CreatePed(4, modelHash, loc.x, loc.y, spawnZ, loc.heading, false, false)
             SetEntityInvincible(ped, true)
             SetBlockingOfNonTemporaryEvents(ped, true)
             FreezeEntityPosition(ped, true)
